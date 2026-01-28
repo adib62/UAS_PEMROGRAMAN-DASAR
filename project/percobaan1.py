@@ -108,4 +108,70 @@ st.write("") # Spasi kosong dikit
 # ==========================================
 @st.fragment
 def show_gallery_interactive():
-    # A. Ambil Data
+    # A. Ambil Datadef show_gallery_interactive():
+    # A. Ambil Data Spesifik Mobil yang Dipilih
+    #    Ingat: gallery_data ini asalnya dari SERVER.
+    data_mobil = gallery_data[st.session_state.selected_car]
+    
+    # B. Ambil List Gambar & Info Lainnya
+    #    (Variabel dibedakan biar gak crash logic)
+    list_gambar_server = data_mobil["images"]
+    jumlah_gambar = len(list_gambar_server)
+    
+    # C. Safety Check (Biar index gak loncat keluar batas)
+    if st.session_state.img_index >= jumlah_gambar:
+        st.session_state.img_index = 0
+
+    # D. TAMPILKAN GAMBAR UTAMA
+    #    Streamlit akan mencari file ini di folder 'images' local
+    current_url = list_gambar_server[st.session_state.img_index]
+    
+    try:
+        st.image(
+            current_url, 
+            caption=f"📸 Slide {st.session_state.img_index + 1} / {jumlah_gambar}", 
+            use_container_width=True
+        )
+    except Exception:
+        st.warning(f"⚠️ Gambar tidak ditemukan: `{current_url}`. Pastikan folder 'images' ada di dalam folder project.")
+
+    # E. TOMBOL NAVIGASI
+    col_prev, col_bar, col_next = st.columns([1, 4, 1], vertical_alignment="center")
+    
+    with col_prev:
+        if st.button("◀️", help="Gambar Sebelumnya"):
+            st.session_state.img_index = (st.session_state.img_index - 1) % jumlah_gambar
+            st.rerun()
+            
+    with col_next:
+        if st.button("▶️", help="Gambar Berikutnya"):
+            st.session_state.img_index = (st.session_state.img_index + 1) % jumlah_gambar
+            st.rerun()
+
+    with col_bar:
+        # Progress bar visual
+        st.progress((st.session_state.img_index + 1) / jumlah_gambar)
+
+    # F. INFORMASI SPESIFIKASI (DATA DARI SERVER)
+    st.markdown("### 📝 Data Spesifikasi")
+    
+    # Layout Grid untuk Info
+    with st.container(border=True):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**📅 Tahun Rilis**")
+            st.code(data_mobil['tahun'])
+            
+            st.markdown("**👤 Driver Legendaris**")
+            st.info(data_mobil['driver'])
+            
+        with c2:
+            st.markdown("**⚙️ Spesifikasi Mesin**")
+            st.warning(data_mobil['specs'])
+
+# Panggil fungsi UI di atas agar muncul di layar
+show_gallery_interactive()
+
+# Footer
+st.divider()
+st.caption("🚀 Powered by **FastAPI** (Server) & **Streamlit** (Client)")
