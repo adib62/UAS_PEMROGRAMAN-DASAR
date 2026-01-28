@@ -1,17 +1,29 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import os
 
 # ==========================================
-# 1. KONFIGURASI & DATABASE LENGKAP
+# 1. KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(layout="centered", page_title="WRC Auction House", page_icon="💰")
 
-# Fungsi format angka ke Rupiah (Titik setiap 3 digit)
+# Helper: Format Angka ke Rupiah (Titik tiap 3 digit)
 def format_rupiah(nominal):
     return f"Rp {nominal:,.0f}".replace(",", ".")
 
-# Database 8 Mobil (Lengkap dengan View A-H)
+# --- CSS TAMPILAN ---
+st.markdown("""
+<style>
+    .stButton button {width: 100%; border-radius: 10px; font-weight: bold;}
+    div[data-testid="stImage"] img {border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);}
+</style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 2. DATABASE LENGKAP (8 MOBIL)
+# ==========================================
+# Disimpan di session_state agar data tawaran tidak hilang saat ganti mobil
 if 'gallery_data' not in st.session_state:
     st.session_state.gallery_data = {
         "Mitsubishi Lancer Evolution VI GSR": {
@@ -56,19 +68,12 @@ if 'gallery_data' not in st.session_state:
         }
     }
 
+# Riwayat Tawaran
 if 'bid_history' not in st.session_state:
     st.session_state.bid_history = []
 
-# --- CSS ---
-st.markdown("""
-<style>
-    .stButton button {width: 100%; border-radius: 10px; font-weight: bold;}
-    div[data-testid="stImage"] img {border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);}
-</style>
-""", unsafe_allow_html=True)
-
 # ==========================================
-# 2. STATE & NAVIGASI
+# 3. STATE MANAGEMENT & NAVIGASI
 # ==========================================
 if 'selected_car' not in st.session_state:
     st.session_state.selected_car = list(st.session_state.gallery_data.keys())[0]
@@ -76,6 +81,8 @@ if 'img_index' not in st.session_state:
     st.session_state.img_index = 0
 
 st.title("💰 WRC Championship Auction")
+st.caption("Mode: All-in-One Standalone System")
+
 pilihan_mobil = st.selectbox("📂 Pilih Unit Lelang:", list(st.session_state.gallery_data.keys()))
 
 if pilihan_mobil != st.session_state.selected_car:
@@ -85,7 +92,7 @@ if pilihan_mobil != st.session_state.selected_car:
 st.divider()
 
 # ==========================================
-# 3. UI LELANG (GALLERY + RUPIAH FORMAT)
+# 4. UI: GALERI & BIDDING
 # ==========================================
 @st.fragment
 def show_auction_standalone():
@@ -93,8 +100,14 @@ def show_auction_standalone():
     list_gambar = data_mobil["images"]
     jumlah_gambar = len(list_gambar)
     
-    # --- 📸 GALERI GAMBAR (NAVIGASI TETAP ADA) ---
-    st.image(list_gambar[st.session_state.img_index], caption=f"Lot: {st.session_state.selected_car}", use_container_width=True)
+    # --- 📸 GALERI GAMBAR (NAVIGASI) ---
+    current_path = list_gambar[st.session_state.img_index]
+    
+    # Safety Check: Pastikan file gambar ada
+    if os.path.exists(current_path):
+        st.image(current_path, caption=f"Lot: {st.session_state.selected_car}", use_container_width=True)
+    else:
+        st.error(f"⚠️ Gambar tidak ditemukan: `{current_path}`")
     
     col_prev, col_bar, col_next = st.columns([1, 4, 1], vertical_alignment="center")
     with col_prev:
@@ -108,7 +121,7 @@ def show_auction_standalone():
     with col_bar:
         st.progress((st.session_state.img_index + 1) / jumlah_gambar)
     
-    # Status Harga
+    # --- STATUS HARGA ---
     st.markdown("### 🔨 Status Lelang")
     c1, c2 = st.columns(2)
     c1.metric("Harga Tertinggi", format_rupiah(data_mobil['price']))
@@ -119,7 +132,7 @@ def show_auction_standalone():
         st.write(f"**Driver:** {data_mobil['driver']}")
         st.write(f"**Specs:** {data_mobil['specs']}")
 
-    # Input Bidding
+    # --- INPUT BIDDING (DENGAN TITIK OTOMATIS) ---
     st.markdown("### 💸 Masukkan Tawaran")
     with st.container(border=True):
         nama = st.text_input("Nama Anda:", placeholder="Contoh: Sultan Jogja")
@@ -131,16 +144,20 @@ def show_auction_standalone():
             step=10000000
         )
         
-        # --- ✨ LIVE PREVIEW DENGAN TITIK ---
+        # ✨ LIVE PREVIEW: Agar tidak bingung nominal
         st.info(f"Konfirmasi Angka: **{format_rupiah(harga_input)}**")
         
         if st.button("🔥 KIRIM BID SEKARANG", type="primary"):
             if not nama:
                 st.warning("Nama wajib diisi!")
+            elif harga_input <= data_mobil['price']:
+                st.error("Tawaran harus lebih tinggi dari harga saat ini!")
             else:
+                # Update Database Lokal
                 st.session_state.gallery_data[st.session_state.selected_car]["price"] = harga_input
                 st.session_state.gallery_data[st.session_state.selected_car]["highest_bidder"] = nama
                 
+                # Tambah ke Log Riwayat
                 log = {
                     "Waktu": datetime.now().strftime("%H:%M:%S"),
                     "Mobil": st.session_state.selected_car,
@@ -154,7 +171,7 @@ def show_auction_standalone():
 show_auction_standalone()
 
 # ==========================================
-# 4. TABEL RIWAYAT
+# 5. TABEL RIWAYAT
 # ==========================================
 st.divider()
 st.subheader("📜 Log Riwayat Penawaran")
