@@ -74,3 +74,58 @@ gallery_data = {
         "tahun": "2015 (Production Cup)",
         "specs": "2.0L Boxer Turbo, 280 HP, AWD",
         "driver": "Mark Higgins 🇬🇧"
+    }
+}
+
+# --- SIDEBAR (Navigasi / Pilihan) ---
+st.sidebar.title("🏁 WRC Garage")
+st.sidebar.write("Pilih mobil legendaris di bawah ini:")
+
+# Membuat dropdown dari key dictionary
+selected_car_name = st.sidebar.selectbox(
+    "Daftar Mobil",
+    options=list(gallery_data.keys())
+)
+
+# Ambil data berdasarkan pilihan
+car_info = gallery_data[selected_car_name]
+
+# --- MAIN PAGE (Tampilan Utama) ---
+st.title(f"{selected_car_name}")
+st.markdown("---")
+
+# Tampilan Kolom untuk Spesifikasi
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.info(f"**Tahun:**\n{car_info['tahun']}")
+
+with col2:
+    st.warning(f"**Spesifikasi:**\n{car_info['specs']}")
+
+with col3:
+    st.success(f"**Driver:**\n{car_info['driver']}")
+
+st.markdown("### 📸 Gallery")
+
+# Tampilkan Gambar (Logic Grid)
+# Note: Streamlit perlu akses file lokal. Pastikan folder 'images/' ada di sebelah file .py ini.
+images_list = car_info['images']
+
+if images_list:
+    # Buat grid 4 kolom
+    cols = st.columns(4)
+    for index, image_path in enumerate(images_list):
+        with cols[index % 4]:
+            try:
+                # Menampilkan gambar
+                st.image(image_path, caption=f"View {index+1}", use_container_width=True)
+            except Exception:
+                # Fallback jika gambar tidak ditemukan di folder lokal
+                st.error(f"File tidak ditemukan: {image_path}")
+else:
+    st.write("Tidak ada gambar tersedia.")
+
+# --- FOOTER ---
+st.sidebar.markdown("---")
+st.sidebar.caption("Powered by Streamlit")
