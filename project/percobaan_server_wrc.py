@@ -11,7 +11,7 @@ st.set_page_config(
 gallery_data = {
     "Mitsubishi Lancer Evolution VI GSR": {
         "images": [
-            "images/Mitsubishi Lancer Evolution VI GSR View_A.avif", "images/Mitsubishi Lancer Evolution VI GSR View_B.avif", 
+            "project/images/Mitsubishi Lancer Evolution VI GSR View_A.avif", "images/Mitsubishi Lancer Evolution VI GSR View_B.avif", 
             "images/Mitsubishi Lancer Evolution VI GSR View_C.avif", "images/Mitsubishi Lancer Evolution VI GSR View_D.avif"
         ],
         "tahun": "1999 (Special Edition)",
